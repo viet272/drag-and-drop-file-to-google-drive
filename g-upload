@@ -96,7 +96,7 @@ try {
             }
         }
     }
-    
+    //I cannot find the url of temporatory folder to assign for $file, so I use new file that moved to vtem folder;
    $file=$file_destination;
     //   $file=$file_tmp;
     
