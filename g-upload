@@ -1,0 +1,99 @@
+<?php
+require_once "google/google-api-php-client/src/Google_Client.php";
+
+require_once "google/google-api-php-client/src/contrib/Google_DriveService.php";
+
+require_once "google/google-api-php-client/src/contrib/Google_Oauth2Service.php";
+
+require_once "google/vendor/autoload.php";
+
+
+$DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive';
+$SERVICE_ACCOUNT_EMAIL = 'bnsongdrive@bnson-gdrive-upload.iam.gserviceaccount.com';
+$SERVICE_ACCOUNT_PKCS12_FILE_PATH = 'google/bnson-gdrive-upload-65916e4b8d41.p12';
+
+function buildService() {//function for first build up service
+    global $DRIVE_SCOPE, $SERVICE_ACCOUNT_EMAIL, $SERVICE_ACCOUNT_PKCS12_FILE_PATH;
+
+    $key = file_get_contents($SERVICE_ACCOUNT_PKCS12_FILE_PATH);
+    $auth = new Google_AssertionCredentials(
+        $SERVICE_ACCOUNT_EMAIL,
+        array($DRIVE_SCOPE),
+        $key);
+    $client = new Google_Client();
+    $client->setUseObjects(true);
+    $client->setAssertionCredentials($auth);
+    return new Google_DriveService($client);
+}
+
+
+function insertFile($service, $title, $description, $parentId, $filename) {//function for insert a file
+
+    $file = new Google_DriveFile();
+    $file->setTitle($title);
+    $file->setDescription($description);
+   /* $file->setMimeType($mimeType);*/
+
+    // Set the parent folder.
+    if ($parentId != null) {
+        $parent = new Google_ParentReference();
+        $parent->setId($parentId);
+        $file->setParents(array($parent));
+    }
+
+    try {
+        $data = file_get_contents($filename);
+
+        $createdFile = $service->files->insert($file, array(
+            'data' => $data,
+            /*'mimeType' => $mimeType,*/
+        ));
+
+
+        //set the file with MIME
+        $permission = new Google_Permission();
+        $permission->setRole( 'writer' );
+        $permission->setType( 'anyone' );
+        $permission->setValue( 'me' );
+        $service->permissions->insert( $createdFile->getId(), $permission );
+
+        //insert permission for the file
+
+
+
+        return $createdFile;
+    } catch (Exception $e) {
+        print "An error occurred1: " . $e->getMessage();
+    }
+}
+
+
+    try {
+        $root_id='0B9yNnPxk8yvDYzhFUFgzMjlJRWc';
+
+        $service=buildService();
+
+        $file="google/test1.jpg";
+
+        $title=$file;
+        $description='';
+        $parentId=$root_id;
+
+       // $uploaddir = '/var/www/uploads/';
+       // $uploadfile = $uploaddir . basename($_FILES['userfile']['name']);
+       // $mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";//For Excel File
+        $filename=$file;
+        $parentId=insertFile($service, $title, $description, $parentId, $filename);
+
+        print "File Successfully upload ";
+        print $file;
+
+
+    } 
+
+        catch (Exception $e) {
+        print "An error occurred1: " . $e->getMessage();
+    }
+
+?>
+
