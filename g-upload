@@ -97,7 +97,7 @@ try {
         }
     }
     
- //   $file=$file_destination;
+   $file=$file_destination;
     //   $file=$file_tmp;
     
     $title=$file_name;
