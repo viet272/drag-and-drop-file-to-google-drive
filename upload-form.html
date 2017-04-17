@@ -1,12 +1,258 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <!--link rel="stylesheet" href="css-g-upload/css/style.css"-->
+        <script
+                src="https://code.jquery.com/jquery-3.2.1.js"
+                integrity="sha256-DZAnKJ/6XZ9si04Hgrsxu/8s717jcIzLy3oi35EouyE="
+                crossorigin="anonymous"></script>
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <style type="text/css">
+            .progress {
+                position: relative;
+            }
+
+            .progress-text {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                text-align: right;
+                padding-right: 5px;
+                color: #333;
+            }
+            .box{
+                background-color: #dfc8ca;
+                padding: 6.25rem 1.25rem;
+                text-align: center;
+            }
+            .dropzone
+            {
+                width:100%;
+                border: 2px dashed #ccc;
+                color:#ccc;
+                padding: 120px 0;
+                text-align: center;
+            }
+            .dropzone.dragover
+            {
+                border: 2px dashed #000;
+                color:#000;
+            }
+            .u-button
+            {
+                display: inline-block;
+                max-width: 100%;
+                margin-bottom: 5px;
+                font-weight: 700;
+                background: #ff3c7e;
+                padding: 10px;
+                color: #fff;
+            }
+        </style>
+        <link rel="stylesheet" type="text/css" href="dropzone-files/component.css" />
+        <script>(function(e,t,n){var r=e.querySelectorAll("html")[0];r.className=r.className.replace(/(^|\s)no-js(\s|$)/,"$1js$2")})(document,window,0);</script>
+        <script src="dropzone-files/custom-file-input.js"></script>
     </head>
     <body>
-        <form  action="g-upload.php" method="post" enctype="multipart/form-data">
-        Select image to upload:
-        <input type="file" name="fileToUpload" id="fileToUpload">
-        <input type="submit" value="Upload Image" name="submit">
-        </form>
+
+        <img src="progressbar.gif" style="display:none" />
+        <div class="container">
+            <h1>Mini Upload Tool</h1>
+            <div id="progress-group">
+
+            </div>
+            <form role="form" action="#" method="post" enctype="multipart/form-data" onsubmit="return doUpload();" id="js-upload-form">
+                <div class="form-group">
+                    
+                    <input type="file" class="form-control f-input" name="myfile" id="myfile" multiple/>                         
+                    <div class="dropzone" id="dropzone">
+                        <label class="u-button" for="myfile">Click here or drag files to upload</label>
+                        <div id="dropfname">
+                        </div>
+                    </div>                
+
+                    <label for="name">Your Name</label>
+                    <input type="text" class="form-control" name="name" id=""/>
+                    <label for="email">Email</label>
+                    <input type="text" class="form-control" name="email" id=""/>
+                    <label for="phone">Phone number</label>
+                    <input type="text" class="form-control" name="phone" id=""/>
+                    <label for="description">Description</label>
+                    <textarea class="form-control" name="description" id=""></textarea>
+                </div>    
+                <input type="submit" class="btn btn-default" value="Upload" />
+                <input type="button" class="btn btn-default" value="Cancel" onclick="cancleUpload();"/>
+            </form> 
+            <hr>
+
+        </div>
+        <script type="text/javascript">
+            var dropzonefiles;
+            (function(){
+                var dropzone = document.getElementById("dropzone");
+
+                $('.f-input[type=file]').change(function() {
+                    document.getElementById('dropfname').innerHTML = '';
+                    var names = [];
+                    for (var i = 0; i < $(this).get(0).files.length; ++i) {
+                        names.push($(this).get(0).files[i].name);
+                        document.getElementById('dropfname').innerHTML += names[i]+'</br>';
+                    }
+                });
+
+                dropzone.ondrop = function(e) {
+                    e.preventDefault();
+                    this.className='dropzone';
+                    console.log(e.dataTransfer.files);
+                    
+                    var files = (e.dataTransfer.files);
+                    dropzonefiles = (e.dataTransfer.files);
+                    var formData = new FormData();
+                    document.getElementById('dropfname').innerHTML = '';
+                    //show names of files in the dropzone
+                    for (x=0; x<files.length;x++)
+                    {
+                        formData.append('file[]',files[x]);
+                        document.getElementById('dropfname').innerHTML +=files[x].name+'</br>';
+                    }
+                    
+                };
+
+                dropzone.ondragover = function() {
+                    this.className='dropzone dragover';
+                    return false;
+                };
+
+                dropzone.ondragleave = function() {
+                    this.className = 'dropzone';
+                    return false;
+                };
+
+            }());
+   
+            //Upload using ajax
+            var http_arr = new Array();
+            function doUpload() {
+                //If upload using tradition input;
+                if($('.f-input[type=file]').val() != '')
+                    {
+                        document.getElementById('progress-group').innerHTML = '';
+                        var files = document.getElementById('myfile').files; 
+                        for (i=0;i<files.length;i++) {
+                            uploadFile(files[i], i);
+                        }
+                    }
+                else //upload using div dropzone
+                {
+                    for (i=0;i<dropzonefiles.length;i++) {
+                        uploadFile(dropzonefiles[i], i);
+                    }
+
+                }
+                //If upload using div dropzone;
+                
+                return false;
+            }
+
+            function uploadFile(file, index) {
+                var http = new XMLHttpRequest();
+                http_arr.push(http);
+                var ProgressGroup = document.getElementById('progress-group');
+                //Div.Progress
+                var Progress = document.createElement('div');
+                Progress.className = 'progress';
+                //Div.Progress-bar
+                var ProgressBar = document.createElement('div');
+                ProgressBar.className = 'progress-bar';
+                //Div.Progress-text
+                var ProgressText = document.createElement('div');
+                ProgressText.className = 'progress-text';   
+                Progress.appendChild(ProgressBar);
+                Progress.appendChild(ProgressText);
+                ProgressGroup.appendChild(Progress);
+
+                //counting upload speed
+                var oldLoaded = 0;
+                var oldTime = 0;
+                http.upload.addEventListener('progress', function(event) {  
+                    if (oldTime == 0) { //Set timing to 0
+                        oldTime = event.timeStamp;
+                    }   
+                    var fileName = file.name; // file name
+                    var fileLoaded = event.loaded; //percent loaded
+                    var fileTotal = event.total; // total file zie
+                    var fileProgress = parseInt((fileLoaded/fileTotal)*100) || 0;
+                    var speed = speedRate(oldTime, event.timeStamp, oldLoaded, event.loaded);
+                    ProgressBar.innerHTML ='uploading '+ fileName;
+                    ProgressBar.style.width = fileProgress + '%';
+                    ProgressText.innerHTML = fileProgress + '% Upload Speed: '+speed+'KB/s';
+                    if (fileProgress == 100) {
+                        ProgressBar.style.background = 'url("progressbar.gif")';
+                    }
+                    oldTime = event.timeStamp;
+                    oldLoaded = event.loaded; 
+                }, false);
+
+
+                //start Upload
+                var data = new FormData();
+
+
+                data.append('filename', file.name);
+
+                data.append('myfile', file);
+                http.open('POST', 'ajax-upload.php', true);
+                http.send(data);
+
+
+                //get data from php-upload file
+                http.onreadystatechange = function(event) {
+                    if (http.readyState == 4 && http.status == 200) {
+                        ProgressBar.style.background = '';
+                        try {
+                            var server = JSON.parse(http.responseText);
+                            if (server.status) {
+                                ProgressBar.className += ' progress-bar-success';
+                                ProgressBar.innerHTML = server.message;            
+                            } else {
+                                ProgressBar.className += ' progress-bar-danger'; 
+                                ProgressBar.innerHTML = server.message;
+                            }
+                        } catch (e) {
+                            ProgressBar.className += ' progress-bar-danger';
+                            ProgressBar.innerHTML = e;
+                        }
+                    }
+                    http.removeEventListener('progress',myFunction);
+                }
+            }
+
+            function cancleUpload() {
+                for (i=0;i<http_arr.length;i++) {
+                    http_arr[i].removeEventListener('progress',myFunction);
+                    http_arr[i].abort();
+                }
+                var ProgressBar = document.getElementsByClassName('progress-bar');
+                for (i=0;i<ProgressBar.length;i++) {
+                    ProgressBar[i].className = 'progress progress-bar progress-bar-danger';
+                }   
+            }
+
+            function myFunction(){
+                return false;            
+            }
+
+
+            function speedRate(oldTime, newTime, oldLoaded, newLoaded) {
+                var timeProcess = newTime - oldTime; //delay time
+                if (timeProcess != 0) {
+                    var currentLoadedPerMilisecond = (newLoaded - oldLoaded)/timeProcess; // bytes per ms
+                    return parseInt((currentLoadedPerMilisecond * 1000)/1024); // KB/s
+                } else {
+                    return parseInt(newLoaded/1024); //KB/s
+                }
+            }
+        </script>
     </body>
 </html>
